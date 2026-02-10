@@ -1,0 +1,69 @@
+version: "3.8"
+
+services:
+  # ----------------------------------------------------------------
+  # 1. Banco de Dados (PostgreSQL)
+  # Onde vamos salvar os status dos vídeos (PENDING, DONE, etc)
+  # ----------------------------------------------------------------
+  postgres:
+    image: postgres:15-alpine
+    container_name: soat-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password123
+      POSTGRES_DB: fiap_x_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - soat-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d fiap_x_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ----------------------------------------------------------------
+  # 2. LocalStack (AWS Local)
+  # Simula S3 e SQS na sua máquina para não precisar de internet/cartão
+  # ----------------------------------------------------------------
+  localstack:
+    image: localstack/localstack
+    container_name: soat-localstack
+    ports:
+      - "4566:4566" # Gateway principal da AWS Local
+      - "4510-4559:4510-4559" # Portas extras para serviços
+    environment:
+      - SERVICES=s3,sqs # Habilita apenas S3 e SQS
+      - DEBUG=1
+      - DOCKER_HOST=unix:///var/run/docker.sock
+    volumes:
+      - "./localstack-script:/etc/localstack/init/ready.d" # Script para criar filas/buckets no boot
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    networks:
+      - soat-network
+
+  # ----------------------------------------------------------------
+  # 3. PgAdmin (Opcional)
+  # Interface visual para ver o banco de dados no navegador
+  # ----------------------------------------------------------------
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: soat-pgadmin
+    ports:
+      - "5050:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    depends_on:
+      - postgres
+    networks:
+      - soat-network
+
+networks:
+  soat-network:
+    driver: bridge
+
+volumes:
+  postgres_data:

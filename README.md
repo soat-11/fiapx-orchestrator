@@ -34,6 +34,7 @@ AWS SDK v3 - Manipulação de serviços Cloud
 
 O projeto está dividido em camadas para desacoplar regras de negócio de frameworks e ferramentas externas:
 
+```
 src/
 ├── core/ # 🧠 Regras de Negócio (Puro TypeScript)
 │ ├── domain/ # Entidades e Enums (Video, VideoStatus)
@@ -47,6 +48,7 @@ src/
 │ └── http/ # Controllers e DTOs (API REST)
 │
 └── modules/ # 📦 Injeção de Dependência do NestJS
+```
 
 ## ⚙️ Configuração do Ambiente
 

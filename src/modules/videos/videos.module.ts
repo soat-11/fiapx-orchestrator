@@ -9,15 +9,23 @@ import { MessagingModule } from "@infra/messaging/messaging.module";
 import { UploadEventsListener } from "@infra/messaging/listeners/upload-events.listener";
 import { FinishVideoProcessingUseCase } from "@core/use-cases/finish-video-processing.use-case";
 import { VideoResultListener } from "@infra/messaging/listeners/video-result.listener";
+import { AuthModule } from "@infra/auth/auth.module";
 
 @Module({
-  imports: [ConfigModule, DatabaseModule, StorageModule, MessagingModule],
+  imports: [
+    ConfigModule,
+    DatabaseModule,
+    StorageModule,
+    MessagingModule,
+    AuthModule,
+  ],
   controllers: [VideosController],
   providers: [
     // Use cases
     CreateVideoUploadUseCase,
     StartVideoProcessingUseCase,
     FinishVideoProcessingUseCase,
+    AuthModule,
 
     // Listener
     UploadEventsListener,

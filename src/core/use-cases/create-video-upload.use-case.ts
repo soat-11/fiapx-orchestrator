@@ -1,7 +1,8 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable, Logger, Inject } from "@nestjs/common";
 import { Video } from "../domain/entities/video.entity";
 import { IVideoRepository } from "../repositories/video-repository.interface";
 import { IStorageGateway } from "../interfaces/storage-gateway.interface";
+import { Result } from "@shared/result";
 
 export interface CreateVideoInput {
   fileName: string;
@@ -19,11 +20,13 @@ export class CreateVideoUploadUseCase {
   private readonly logger = new Logger(CreateVideoUploadUseCase.name);
 
   constructor(
+    @Inject("IVideoRepository")
     private readonly videoRepository: IVideoRepository,
+    @Inject("IStorageGateway")
     private readonly storageGateway: IStorageGateway,
   ) {}
 
-  async execute(input: CreateVideoInput): Promise<CreateVideoOutput> {
+  async execute(input: CreateVideoInput): Promise<Result<CreateVideoOutput>> {
     this.logger.log(
       `[1/4] Iniciando processo de upload para o usuário: ${input.userId}`,
     );
@@ -52,14 +55,14 @@ export class CreateVideoUploadUseCase {
 
       this.logger.log(`[4/4] Sucesso!`);
 
-      return {
+      return Result.ok<CreateVideoOutput>({
         videoId: video.id,
         uploadUrl: url,
         status: video.status,
-      };
+      });
     } catch (error) {
       this.logger.error(`[ERRO] ${error.message}`, error.stack);
-      throw error;
+      return Result.fail<CreateVideoOutput>(error.message);
     }
   }
 }

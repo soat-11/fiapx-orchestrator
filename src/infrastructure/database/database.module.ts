@@ -2,7 +2,6 @@ import { Module } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { TypeOrmVideo } from "./typeorm/entities/video.orm-entity";
-import { IVideoRepository } from "@core/repositories/video-repository.interface";
 import { TypeOrmVideoRepository } from "./repositories/typeorm-video.repository";
 
 @Module({
@@ -26,10 +25,10 @@ import { TypeOrmVideoRepository } from "./repositories/typeorm-video.repository"
   ],
   providers: [
     {
-      provide: IVideoRepository,
+      provide: "IVideoRepository",
       useClass: TypeOrmVideoRepository,
     },
   ],
-  exports: [TypeOrmModule, IVideoRepository],
+  exports: [TypeOrmModule, "IVideoRepository"],
 })
 export class DatabaseModule {}

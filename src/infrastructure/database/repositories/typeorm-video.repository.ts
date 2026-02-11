@@ -33,4 +33,13 @@ export class TypeOrmVideoRepository implements IVideoRepository {
     const persistenceModel = VideoMapper.toPersistence(video);
     await this.typeOrmRepo.save(persistenceModel);
   }
+
+  async findAllByUserId(userId: string): Promise<Video[]> {
+    const schemas = await this.typeOrmRepo.find({
+      where: { userId },
+      order: { createdAt: "DESC" },
+    });
+
+    return schemas.map((schema) => VideoMapper.toDomain(schema));
+  }
 }

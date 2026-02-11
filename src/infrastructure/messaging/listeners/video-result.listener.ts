@@ -25,10 +25,10 @@ export class VideoResultListener implements OnModuleInit {
       region: this.configService.get<string>("AWS_REGION"),
       endpoint: this.configService.get<string>("AWS_ENDPOINT"),
       credentials: {
-        accessKeyId: this.configService.get<string>("AWS_ACCESS_KEY_ID"),
-        secretAccessKey: this.configService.get<string>(
-          "AWS_SECRET_ACCESS_KEY",
-        ),
+        accessKeyId:
+          this.configService.get<string>("AWS_ACCESS_KEY_ID") || "teste",
+        secretAccessKey:
+          this.configService.get<string>("AWS_SECRET_ACCESS_KEY") || "teste",
       },
     });
   }

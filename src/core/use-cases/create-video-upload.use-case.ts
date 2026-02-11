@@ -25,29 +25,32 @@ export class CreateVideoUploadUseCase {
 
   async execute(input: CreateVideoInput): Promise<CreateVideoOutput> {
     this.logger.log(
-      `[1/4] Iniciando processo de upload para o usuário: ${input.userId} | Arquivo: ${input.fileName}`,
+      `[1/4] Iniciando processo de upload para o usuário: ${input.userId}`,
     );
 
     try {
-      this.logger.log(`[2/4] Solicitando Presigned URL ao Storage Gateway...`);
-      const { url, fileKey } = await this.storageGateway.generatePresignedUrl(
-        input.fileName,
-      );
-      this.logger.debug(`URL gerada para a key: ${fileKey}`);
-
       const video = new Video({
         fileName: input.fileName,
         userId: input.userId,
-        s3KeyRaw: fileKey,
+        s3KeyRaw: "",
       });
 
-      this.logger.log(`[3/4] Persistindo entidade Video no Banco de Dados...`);
-      await this.videoRepository.create(video);
-      this.logger.debug(`Video ID gerado: ${video.id}`);
+      this.logger.debug(`Video ID gerado pela entidade: ${video.id}`);
 
-      this.logger.log(
-        `[4/4] Processo finalizado com sucesso! Retornando dados.`,
+      this.logger.log(`[2/4] Solicitando Presigned URL...`);
+
+      const { url, fileKey } = await this.storageGateway.generatePresignedUrl(
+        input.fileName,
+        video.id,
       );
+
+      video.s3KeyRaw = fileKey;
+
+      this.logger.log(`[3/4] Persistindo no Banco...`);
+
+      await this.videoRepository.create(video);
+
+      this.logger.log(`[4/4] Sucesso!`);
 
       return {
         videoId: video.id,
@@ -55,10 +58,7 @@ export class CreateVideoUploadUseCase {
         status: video.status,
       };
     } catch (error) {
-      this.logger.error(
-        `[ERRO] Falha ao criar upload de vídeo: ${error.message}`,
-        error.stack,
-      );
+      this.logger.error(`[ERRO] ${error.message}`, error.stack);
       throw error;
     }
   }

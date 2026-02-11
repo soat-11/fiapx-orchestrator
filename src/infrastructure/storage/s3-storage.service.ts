@@ -38,8 +38,9 @@ export class S3StorageService implements IStorageGateway {
 
   async generatePresignedUrl(
     fileName: string,
+    videoId: string,
   ): Promise<{ url: string; fileKey: string }> {
-    const fileKey = `raw/${uuidv4()}-${fileName}`;
+    const fileKey = `raw/${videoId}-${fileName.replace(/\s+/g, "_")}`;
     this.logger.debug(`Gerando chave única para o arquivo: ${fileKey}`);
 
     const command = new PutObjectCommand({

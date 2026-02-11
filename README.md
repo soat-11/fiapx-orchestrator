@@ -1,23 +1,36 @@
 # 🎥 Video Processing API - Hackathon FIAP
 
-API desenvolvida seguindo os princípios de Clean Architecture para processamento assíncrono de vídeos. O sistema utiliza Presigned URLs para uploads diretos no Storage (S3), garantindo alta performance e baixo acumo de memória na aplicação.
+Este microsserviço é o coração da plataforma de processamento de vídeos. Ele orquestra todo o fluxo de upload, estado e notificações, utilizando uma arquitetura Event-Driven e Clean Architecture para garantir escalabilidade e desacoplamento.
 
-🚀 Status do Projeto
-Fase Atual: ✅ Upload Seguro & Persistência Inicial
+🏗 Arquitetura do Sistema
+O sistema resolve o problema de uploads pesados e processamento assíncrono da seguinte forma:
 
-[x] Configuração do Docker (Postgres + LocalStack)
+Upload Inteligente: O cliente recebe uma Presigned URL para fazer upload direto no S3 (Zero carga na API).
 
-[x] Estrutura de Pastas (Clean Architecture)
+Event Driven: A API não fica esperando. O S3 avisa quando o arquivo chega (SQS).
 
-[x] Conexão com Banco de Dados (TypeORM)
+Desacoplamento: O processamento pesado (FFmpeg/Worker) é isolado via filas.
 
-[x] Integração com Storage S3 (AWS SDK v3)
+Resiliência: Tratamento de erros, retentativas e validação de mensagens ("Poison Messages").
 
-[x] Geração de Links de Upload (Presigned URLs)
+```
+graph LR
+    User[Cliente] -- 1. POST /videos --> API[Orchestrator API]
+    API -- 2. Retorna Presigned URL --> User
+    User -- 3. PUT Upload (Binário) --> S3[Bucket Raw]
+    S3 -- 4. Evento S3 --> Q1[SQS: upload-events]
+    Q1 -- 5. Consome Evento --> API
+    API -- 6. Atualiza DB (PROCESSING) --> DB[(Postgres)]
+    API -- 7. Envia Job --> Q2[SQS: video-processing]
+    Q2 -.-> Worker[Python Worker]
+    Worker -.-> Q3[SQS: video-result]
+    Q3 -- 8. Consome Resultado --> API
+    API -- 9. Atualiza DB (DONE/ERROR) --> DB
+    API -- 10. Notifica --> Q4[SQS: email-notification]
+```
 
-[ ] Processamento de Vídeo (FFmpeg) - Próximo passo
+## 🛠 Tecnologias Utilizadas
 
-🛠 Tecnologias Utilizadas
 NestJS - Framework Backend
 
 TypeORM - ORM para PostgreSQL
@@ -29,6 +42,13 @@ LocalStack - Emulador de AWS (S3) para desenvolvimento local
 Docker & Docker Compose - Orquestração de containers
 
 AWS SDK v3 - Manipulação de serviços Cloud
+
+## 🛠 Configuração e Instalação
+
+1. Pré-requisitos
+   Node.js (v18+)
+   Docker & Docker Compose
+   AWS CLI (Opcional, para debug)
 
 ## 🏗 Arquitetura (Clean Architecture)
 
@@ -56,77 +76,122 @@ src/
    Certifique-se de que seu arquivo .env tenha as configurações corretas para o LocalStack:
 
 ```
+# Banco de Dados
 DB_HOST=localhost
 DB_PORT=5432
 DB_USER=postgres
 DB_PASSWORD=postgres
 DB_NAME=video_processor_db
 
-# Configuração AWS / LocalStack
+# AWS / LocalStack Configs
 AWS_REGION=us-east-1
-AWS_ACCESS_KEY_ID=teste
-AWS_SECRET_ACCESS_KEY=teste
-AWS_S3_BUCKET_RAW=fiap-x-raw
-# Importante para forçar o uso do LocalStack
+AWS_ACCESS_KEY_ID=test
+AWS_SECRET_ACCESS_KEY=test
 AWS_ENDPOINT=http://localhost:4566
 AWS_S3_FORCE_PATH_STYLE=true
+
+# Buckets
+AWS_S3_BUCKET_RAW=fiap-x-raw
+
+# Filas SQS (URLs do LocalStack)
+AWS_SQS_UPLOAD_QUEUE_URL=http://localhost:4566/000000000000/upload-events-queue
+AWS_SQS_PROCESSING_QUEUE_URL=http://localhost:4566/000000000000/video-processing-queue
+AWS_SQS_RESULT_QUEUE_URL=http://localhost:4566/000000000000/video-result-queue
+AWS_SQS_EMAIL_QUEUE_URL=http://localhost:4566/000000000000/email-notification-queue
 ```
 
 2. Subir Infraestrutura
 
 ```
+# 1. Subir Infraestrutura (Postgres + LocalStack)
 docker-compose up -d
-```
 
-Isso iniciará o PostgreSQL na porta 5432 e o LocalStack (S3) na porta 4566.
+# 2. Instalar Dependências
+npm install
 
-3. Iniciar a API
-
-```
+# 3. Iniciar API (Modo Desenvolvimento)
 npm run start:dev
 ```
 
-🧪 Como Testar o Fluxo de Upload (Passo a Passo)
-Como utilizamos Presigned URLs, o upload é feito em duas etapas:
+Aguarde as mensagens 🎧 Ouvindo eventos... no terminal.
 
-Passo 1: Solicitar Intenção de Upload
-A API registra o vídeo no banco como PENDING e devolve uma URL assinada.
+## 🧪 Roteiro de Teste (End-to-End)
 
-Rota: POST /videos Body:
+Passo 1: Solicitar Upload
+Gera um registro no banco e obtém a URL segura.
+
+```
+curl -X POST http://localhost:3000/videos \
+  -H "Content-Type: application/json" \
+  -d '{"userId": "demo-user", "fileName": "demo.mp4"}'
+```
+
+⚠️ IMPORTANTE: Copie o videoId retornado e a URL gigante de upload.
+
+Passo 2: Realizar Upload (Simulando Frontend)
+
+```
+# Cria um arquivo fake
+echo "conteudo de video" > demo.mp4
+
+# Envia para o S3 (Cole a URL Gigante entre as aspas)
+curl -X PUT -T "demo.mp4" -H "Content-Type: video/mp4" "COLE_A_URL_AQUI"
+```
+
+👀 Observe o Log da API: Ela detectará o arquivo automaticamente e mudará o status para PROCESSING.
+
+Passo 3: Simular o Worker (Python)
+
+```
+aws --endpoint-url=http://localhost:4566 sqs send-message \
+  --queue-url http://localhost:4566/000000000000/video-result-queue \
+  --message-body '{"videoId": "SEU_VIDEO_ID", "status": "DONE", "outputKey": "zips/resultado.zip"}'
+```
+
+👀 Observe o Log da API: Ela processará o resultado, mudará o status para DONE e enviará a notificação.
+
+Passo 4: Verificar Notificação (Email)
+Confira se a mensagem final chegou na fila de emails.
+
+```
+aws --endpoint-url=http://localhost:4566 sqs receive-message \
+  --queue-url http://localhost:4566/000000000000/email-notification-queue
+```
+
+## 🔌 Contratos de Integração (Worker)
+
+Para garantir a interoperabilidade com o time de Engenharia de Dados (Python), definimos os seguintes contratos JSON.
+
+Input (O que enviamos para o Worker)
+Fila: video-processing-queue
 
 ```
 {
-  "fileName": "video_academia_hypefit.mp4",
-  "userId": "usuario-teste-123"
+  "videoId": "uuid-v4",
+  "inputBucket": "fiap-x-raw",
+  "inputKey": "raw/uuid-v4-nome.mp4"
 }
 ```
 
-Resposta Esperada:
+Output (O que esperamos receber)
+Fila: video-result-queue
+
+Cenário Sucesso:
 
 ```
 {
-  "videoId": "uuid-do-video",
-  "uploadUrl": "http://localhost:4566/fiap-x-raw/raw/...",
-  "status": "PENDING"
+  "videoId": "uuid-v4",
+  "status": "DONE",
+  "outputKey": "zips/resultado.zip"
 }
 ```
 
-Passo 2: Fazer o Upload Real (Simulando o Frontend)
-Com a uploadUrl em mãos, o cliente envia o arquivo binário diretamente para o S3.
-
-Comando (via Terminal): Navegue até a pasta onde está o vídeo antes de rodar o comando.
-
-Bash
+Cenário Erro:
 
 ```
-curl -X PUT -T "nome_do_video.mp4" \
-  -H "Content-Type: video/mp4" \
-  "URL_GIGANTE_RECEBIDA_NO_PASSO_1"
-```
-
-Passo 3: Verificar se o arquivo chegou no S3
-Para confirmar que o upload funcionou e o arquivo não está corrompido (0 bytes):
-
-```
-aws --endpoint-url=http://localhost:4566 s3 ls s3://fiap-x-raw --recursive
+{
+  "videoId": "uuid-v4",
+  "status": "ERROR",
+  "errorMessage": "Falha no codec de vídeo"
+}
 ```

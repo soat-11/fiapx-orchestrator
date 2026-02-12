@@ -1,0 +1,55 @@
+name: SonarQube Quality Check
+
+on:
+  pull_request:
+    branches:
+      - main
+    types: [opened, synchronize, reopened]
+
+jobs:
+  sonarcloud:
+    name: SonarCloud Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Rodar Testes e Gerar Coverage
+        run: npm run test:cov
+        env:
+          NODE_ENV: test
+
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_USER: postgres
+          DB_PASSWORD: postgres
+          DB_NAME: video_processor_db_test
+
+          AWS_REGION: us-east-1
+          AWS_ACCESS_KEY_ID: fake
+          AWS_SECRET_ACCESS_KEY: fake
+          AWS_ENDPOINT: http://localhost:4566
+          AWS_S3_FORCE_PATH_STYLE: "true"
+
+          AWS_S3_BUCKET_RAW: fiap-x-raw
+          AWS_SQS_UPLOAD_QUEUE_URL: http://localhost:4566/000000000000/upload-events-queue
+          AWS_SQS_PROCESSING_QUEUE_URL: http://localhost:4566/000000000000/video-processing-queue
+          AWS_SQS_RESULT_QUEUE_URL: http://localhost:4566/000000000000/video-result-queue
+          AWS_SQS_EMAIL_QUEUE_URL: http://localhost:4566/000000000000/email-notification-queue
+          JWT_SECRET: segredo_temporario_sonar_test
+
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

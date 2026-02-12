@@ -12,9 +12,10 @@ import {
 import { ApiTags, ApiOperation, ApiResponse, ApiHeader } from "@nestjs/swagger";
 import { CreateVideoUploadUseCase } from "@core/use-cases/create-video-upload.use-case";
 import { ListUserVideosUseCase } from "@core/use-cases/list-user-videos.use-case";
+
 import { CreateVideoDto } from "../dtos/create-video.dto";
-import { CurrentUser } from "@infra/auth/current-user.decorator";
-import { UserIdHeaderGuard } from "@infra/auth/user-id.guard";
+import { UserIdHeaderGuard } from "../../auth/user-id.guard";
+import { CurrentUser } from "../../auth/current-user.decorator";
 
 @ApiTags("Videos")
 @Controller("videos")

@@ -9,6 +9,7 @@ export class VideoMapper {
       s3KeyRaw: raw.s3KeyRaw,
       s3KeyZip: raw.s3KeyZip,
       status: raw.status,
+      userId: raw.userId,
       createdAt: raw.createdAt,
       updatedAt: raw.updatedAt,
     });

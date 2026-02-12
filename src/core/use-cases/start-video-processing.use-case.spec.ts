@@ -4,6 +4,7 @@ import { StartVideoProcessingUseCase } from "./start-video-processing.use-case";
 import { IVideoRepository } from "../repositories/video-repository.interface";
 import { IMessagingGateway } from "../interfaces/messaging-gateway.interface";
 import { Video } from "../domain/entities/video.entity";
+import { Logger } from "@nestjs/common";
 
 describe("StartVideoProcessingUseCase", () => {
   let useCase: StartVideoProcessingUseCase;
@@ -17,6 +18,9 @@ describe("StartVideoProcessingUseCase", () => {
   });
 
   beforeEach(async () => {
+    jest.spyOn(Logger.prototype, "log").mockImplementation(() => {});
+    jest.spyOn(Logger.prototype, "error").mockImplementation(() => {});
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         StartVideoProcessingUseCase,

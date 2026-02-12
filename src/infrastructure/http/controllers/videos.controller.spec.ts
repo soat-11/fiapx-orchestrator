@@ -1,5 +1,5 @@
 import { Test, TestingModule } from "@nestjs/testing";
-import { InternalServerErrorException } from "@nestjs/common";
+import { InternalServerErrorException, Logger } from "@nestjs/common";
 import { VideosController } from "./videos.controller";
 import { CreateVideoUploadUseCase } from "@core/use-cases/create-video-upload.use-case";
 import { ListUserVideosUseCase } from "@core/use-cases/list-user-videos.use-case";
@@ -12,6 +12,9 @@ describe("VideosController", () => {
   let listUseCase: ListUserVideosUseCase;
 
   beforeEach(async () => {
+    jest.spyOn(Logger.prototype, "log").mockImplementation(() => {});
+    jest.spyOn(Logger.prototype, "error").mockImplementation(() => {});
+
     const module: TestingModule = await Test.createTestingModule({
       controllers: [VideosController],
       providers: [

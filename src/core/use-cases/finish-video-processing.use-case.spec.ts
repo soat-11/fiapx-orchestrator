@@ -4,6 +4,7 @@ import { FinishVideoProcessingUseCase } from "./finish-video-processing.use-case
 import { IVideoRepository } from "../repositories/video-repository.interface";
 import { IMessagingGateway } from "../interfaces/messaging-gateway.interface";
 import { Video } from "../domain/entities/video.entity";
+import { Logger } from "@nestjs/common";
 
 describe("FinishVideoProcessingUseCase", () => {
   let useCase: FinishVideoProcessingUseCase;
@@ -17,6 +18,10 @@ describe("FinishVideoProcessingUseCase", () => {
   });
 
   beforeEach(async () => {
+    jest.spyOn(Logger.prototype, "log").mockImplementation(() => {});
+    jest.spyOn(Logger.prototype, "error").mockImplementation(() => {});
+    jest.spyOn(Logger.prototype, "warn").mockImplementation(() => {});
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         FinishVideoProcessingUseCase,

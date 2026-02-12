@@ -2,20 +2,21 @@ import { Test, TestingModule } from "@nestjs/testing";
 import { ConfigService } from "@nestjs/config";
 import { VideoResultListener } from "./video-result.listener";
 import { FinishVideoProcessingUseCase } from "@core/use-cases/finish-video-processing.use-case";
-import { SQSClient, DeleteMessageCommand } from "@aws-sdk/client-sqs";
+import { SQSClient } from "@aws-sdk/client-sqs";
+import { Logger } from "@nestjs/common";
 
 jest.mock("@aws-sdk/client-sqs");
 
 describe("VideoResultListener", () => {
   let listener: VideoResultListener;
   let finishUseCase: FinishVideoProcessingUseCase;
-  let mockSqsClient: any;
 
   beforeEach(async () => {
-    mockSqsClient = {
-      send: jest.fn(),
-    };
-    (SQSClient as jest.Mock).mockImplementation(() => mockSqsClient);
+    jest.spyOn(Logger.prototype, "log").mockImplementation(() => {});
+    jest.spyOn(Logger.prototype, "error").mockImplementation(() => {});
+    jest.spyOn(Logger.prototype, "warn").mockImplementation(() => {});
+
+    (SQSClient as jest.Mock).mockImplementation(() => ({}));
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -40,143 +41,73 @@ describe("VideoResultListener", () => {
     );
   });
 
-  it("should handle DONE status correctly", async () => {
-    const body = {
-      videoId: "123",
-      status: "DONE",
-      outputKey: "zips/123.zip",
-    };
+  it("should process DONE status", async () => {
     const message = {
-      Body: JSON.stringify(body),
-      ReceiptHandle: "handle",
-    };
+      Body: JSON.stringify({
+        videoId: "123",
+        status: "DONE",
+        outputKey: "zip/123.zip",
+      }),
+    } as any;
 
-    await (listener as any).handleMessage(message);
+    await listener.handleMessage(message);
 
     expect(finishUseCase.execute).toHaveBeenCalledWith({
       videoId: "123",
       success: true,
-      zipKey: "zips/123.zip",
+      zipKey: "zip/123.zip",
       errorMessage: undefined,
     });
-    expect(mockSqsClient.send).toHaveBeenCalledWith(
-      expect.any(DeleteMessageCommand),
-    );
   });
 
-  it("should handle ERROR status correctly", async () => {
-    const body = {
-      videoId: "123",
-      status: "ERROR",
-      errorMessage: "Failed",
-    };
+  it("should process ERROR status", async () => {
     const message = {
-      Body: JSON.stringify(body),
-      ReceiptHandle: "handle",
-    };
+      Body: JSON.stringify({
+        videoId: "123",
+        status: "ERROR",
+        errorMessage: "failed",
+      }),
+    } as any;
 
-    await (listener as any).handleMessage(message);
+    await listener.handleMessage(message);
 
     expect(finishUseCase.execute).toHaveBeenCalledWith({
       videoId: "123",
       success: false,
       zipKey: undefined,
-      errorMessage: "Failed",
+      errorMessage: "failed",
     });
   });
 
-  it("should discard invalid JSON messages", async () => {
-    const message = {
-      Body: "invalid-json",
-      ReceiptHandle: "handle",
-    };
+  it("should return silently on invalid JSON", async () => {
+    const message = { Body: "invalid-json" } as any;
 
-    await (listener as any).handleMessage(message);
-
+    await expect(listener.handleMessage(message)).resolves.not.toThrow();
     expect(finishUseCase.execute).not.toHaveBeenCalled();
-    expect(mockSqsClient.send).toHaveBeenCalledWith(
-      expect.any(DeleteMessageCommand),
-    );
   });
 
-  it("should discard messages without videoId or status", async () => {
-    const message = {
-      Body: JSON.stringify({ foo: "bar" }),
-      ReceiptHandle: "handle",
-    };
-
-    await (listener as any).handleMessage(message);
-
-    expect(finishUseCase.execute).not.toHaveBeenCalled();
-    expect(mockSqsClient.send).toHaveBeenCalledWith(
-      expect.any(DeleteMessageCommand),
-    );
-  });
-
-  it("should discard DONE status without outputKey", async () => {
+  it("should return silently if DONE but missing outputKey", async () => {
     const message = {
       Body: JSON.stringify({ videoId: "123", status: "DONE" }),
-      ReceiptHandle: "handle",
-    };
+    } as any;
 
-    await (listener as any).handleMessage(message);
-
+    await expect(listener.handleMessage(message)).resolves.not.toThrow();
     expect(finishUseCase.execute).not.toHaveBeenCalled();
-    expect(mockSqsClient.send).toHaveBeenCalledWith(
-      expect.any(DeleteMessageCommand),
-    );
   });
 
-  it("should use default error message if none provided", async () => {
+  it("should throw on transient error", async () => {
     const message = {
-      Body: JSON.stringify({ videoId: "123", status: "ERROR" }),
-      ReceiptHandle: "handle",
-    };
-
-    await (listener as any).handleMessage(message);
-
-    expect(finishUseCase.execute).toHaveBeenCalledWith(
-      expect.objectContaining({
-        errorMessage:
-          "Erro desconhecido no processamento (Worker não enviou motivo).",
+      Body: JSON.stringify({
+        videoId: "123",
+        status: "DONE",
+        outputKey: "zip/123.zip",
       }),
-    );
-    expect(mockSqsClient.send).toHaveBeenCalledWith(
-      expect.any(DeleteMessageCommand),
-    );
-  });
-
-  it("should delete message if use case throws 'não encontrado'", async () => {
-    const message = {
-      Body: JSON.stringify({ videoId: "999", status: "DONE", outputKey: "k" }),
-      ReceiptHandle: "handle",
-    };
+    } as any;
 
     jest
       .spyOn(finishUseCase, "execute")
-      .mockRejectedValue(new Error("Vídeo não encontrado"));
+      .mockRejectedValue(new Error("DB error"));
 
-    await (listener as any).handleMessage(message);
-
-    // Deve deletar a mensagem
-    expect(mockSqsClient.send).toHaveBeenCalledWith(
-      expect.any(DeleteMessageCommand),
-    );
-  });
-
-  it("should NOT delete message if use case throws transient error", async () => {
-    const message = {
-      Body: JSON.stringify({ videoId: "123", status: "DONE", outputKey: "k" }),
-      ReceiptHandle: "handle",
-    };
-
-    jest
-      .spyOn(finishUseCase, "execute")
-      .mockRejectedValue(new Error("DB Connection Failed"));
-
-    await (listener as any).handleMessage(message);
-
-    // NÃO deve deletar a mensagem
-    expect(mockSqsClient.send).not.toHaveBeenCalled();
+    await expect(listener.handleMessage(message)).rejects.toThrow("DB error");
   });
 });

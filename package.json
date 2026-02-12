@@ -101,6 +101,7 @@
       ".entity.ts",
       ".enum.ts",
       ".interface.ts",
+      ".decorator.ts",
       "main.ts",
       "index.ts",
       "data-source.ts"

@@ -3,6 +3,7 @@ import { ConfigService } from "@nestjs/config";
 import { S3StorageService } from "./s3-storage.service";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { Logger } from "@nestjs/common";
 
 jest.mock("@aws-sdk/client-s3");
 jest.mock("@aws-sdk/s3-request-presigner");
@@ -11,6 +12,11 @@ describe("S3StorageService", () => {
   let service: S3StorageService;
 
   beforeEach(async () => {
+    jest.spyOn(Logger.prototype, "log").mockImplementation(() => {});
+    jest.spyOn(Logger.prototype, "error").mockImplementation(() => {});
+    jest.spyOn(Logger.prototype, "warn").mockImplementation(() => {});
+    jest.spyOn(Logger.prototype, "debug").mockImplementation(() => {});
+
     (S3Client as jest.Mock).mockImplementation(() => ({}));
 
     const module: TestingModule = await Test.createTestingModule({

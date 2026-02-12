@@ -2,7 +2,7 @@ import { Test, TestingModule } from "@nestjs/testing";
 import { CreateVideoUploadUseCase } from "./create-video-upload.use-case";
 import { IVideoRepository } from "../repositories/video-repository.interface";
 import { IStorageGateway } from "../interfaces/storage-gateway.interface";
-import { Result } from "@shared/result";
+import { Logger } from "@nestjs/common";
 
 describe("CreateVideoUploadUseCase", () => {
   let useCase: CreateVideoUploadUseCase;
@@ -10,6 +10,10 @@ describe("CreateVideoUploadUseCase", () => {
   let storageGateway: IStorageGateway;
 
   beforeEach(async () => {
+    jest.spyOn(Logger.prototype, "log").mockImplementation(() => {});
+    jest.spyOn(Logger.prototype, "error").mockImplementation(() => {});
+    jest.spyOn(Logger.prototype, "debug").mockImplementation(() => {});
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         CreateVideoUploadUseCase,

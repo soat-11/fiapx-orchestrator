@@ -2,6 +2,7 @@ import { Test, TestingModule } from "@nestjs/testing";
 import { ConfigService } from "@nestjs/config";
 import { SqsMessagingService } from "./sqs-messaging.service";
 import { SQSClient, SendMessageCommand } from "@aws-sdk/client-sqs";
+import { Logger } from "@nestjs/common";
 
 jest.mock("@aws-sdk/client-sqs");
 
@@ -10,6 +11,10 @@ describe("SqsMessagingService", () => {
   let mockSqsClient: any;
 
   beforeEach(async () => {
+    jest.spyOn(Logger.prototype, "log").mockImplementation(() => {});
+    jest.spyOn(Logger.prototype, "error").mockImplementation(() => {});
+    jest.spyOn(Logger.prototype, "debug").mockImplementation(() => {});
+
     mockSqsClient = {
       send: jest.fn().mockResolvedValue({ MessageId: "msg-id" }),
     };

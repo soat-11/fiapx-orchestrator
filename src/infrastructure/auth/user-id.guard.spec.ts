@@ -1,11 +1,17 @@
 import { Test, TestingModule } from "@nestjs/testing";
-import { UnauthorizedException, ExecutionContext } from "@nestjs/common";
+import {
+  UnauthorizedException,
+  ExecutionContext,
+  Logger,
+} from "@nestjs/common";
 import { UserIdHeaderGuard } from "./user-id.guard";
 
 describe("UserIdHeaderGuard", () => {
   let guard: UserIdHeaderGuard;
 
   beforeEach(async () => {
+    jest.spyOn(Logger.prototype, "error").mockImplementation(() => {});
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [UserIdHeaderGuard],
     }).compile();

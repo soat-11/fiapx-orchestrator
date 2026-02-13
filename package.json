@@ -22,6 +22,7 @@
     "test:debug": "node --inspect-brk -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "typeorm": "ts-node ./node_modules/typeorm/cli",
+    "test:bdd": "jest --testRegex \".*\\.steps\\.ts$\"",
     "migration:run": "npm run typeorm migration:run -- -d ./src/infra/database/typeorm/data-source.ts",
     "migration:generate": "npm run typeorm -- -d ./src/infra/database/typeorm/data-source.ts migration:generate",
     "migration:create": "npm run typeorm -- migration:create",
@@ -44,6 +45,7 @@
     "@scalar/nestjs-api-reference": "^1.0.23",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.0",
+    "jest-cucumber": "^4.5.0",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "pg": "^8.11.0",
@@ -84,7 +86,7 @@
       "json",
       "ts"
     ],
-    "rootDir": "src",
+    "rootDir": ".",
     "testRegex": ".*\\.spec\\.ts$",
     "transform": {
       "^.+\\.(t|j)s$": "ts-jest"
@@ -96,6 +98,7 @@
       "/node_modules/",
       "/dist/",
       "/migrations/",
+      "/coverage/",
       ".module.ts",
       ".dto.ts",
       ".entity.ts",
@@ -104,18 +107,19 @@
       ".decorator.ts",
       "main.ts",
       "index.ts",
-      "data-source.ts"
+      "data-source.ts",
+      "/test/"
     ],
     "coverageDirectory": "../coverage",
     "testEnvironment": "node",
     "moduleNameMapper": {
-      "^@core/(.*)$": "<rootDir>/core/$1",
-      "^@domain/(.*)$": "<rootDir>/core/domain/$1",
-      "^@use-cases/(.*)$": "<rootDir>/core/use-cases/$1",
-      "^@infra/(.*)$": "<rootDir>/infra/$1",
-      "^@modules/(.*)$": "<rootDir>/modules/$1",
-      "^@shared/(.*)$": "<rootDir>/shared/$1",
-      "^@repositories/(.*)$": "<rootDir>/core/repositories/$1"
+      "^@core/(.*)$": "<rootDir>/src/core/$1",
+      "^@domain/(.*)$": "<rootDir>/src/core/domain/$1",
+      "^@use-cases/(.*)$": "<rootDir>/src/core/use-cases/$1",
+      "^@infra/(.*)$": "<rootDir>/src/infra/$1",
+      "^@modules/(.*)$": "<rootDir>/src/modules/$1",
+      "^@shared/(.*)$": "<rootDir>/src/shared/$1",
+      "^@repositories/(.*)$": "<rootDir>/src/core/repositories/$1"
     },
     "coverageThreshold": {
       "global": {

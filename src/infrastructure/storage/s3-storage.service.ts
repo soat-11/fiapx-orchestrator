@@ -12,27 +12,15 @@ export class S3StorageService implements IStorageGateway {
   private readonly logger = new Logger(S3StorageService.name);
 
   constructor(private readonly configService: ConfigService) {
-    const region = this.configService.get<string>("AWS_REGION");
-    const endpoint = this.configService.get<string>("AWS_ENDPOINT");
+    const region = this.configService.get<string>("AWS_REGION") || "us-east-1";
     this.bucketRaw = this.configService.get<string>("AWS_S3_BUCKET_RAW");
 
     this.logger.log(
       `Inicializando S3 Client na região: ${region} | Bucket: ${this.bucketRaw}`,
     );
-    if (endpoint) {
-      this.logger.warn(`Usando Endpoint Customizado (LocalStack): ${endpoint}`);
-    }
 
     this.s3Client = new S3Client({
       region: region,
-      endpoint: endpoint,
-      forcePathStyle: true,
-      credentials: {
-        accessKeyId:
-          this.configService.get<string>("AWS_ACCESS_KEY_ID") || "teste",
-        secretAccessKey:
-          this.configService.get<string>("AWS_SECRET_ACCESS_KEY") || "teste",
-      },
     });
   }
 

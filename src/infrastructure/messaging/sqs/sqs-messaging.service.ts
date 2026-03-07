@@ -10,21 +10,13 @@ export class SqsMessagingService implements IMessagingGateway {
 
   constructor(private readonly configService: ConfigService) {
     const region = this.configService.get<string>("AWS_REGION") || "us-east-1";
-    const endpoint = this.configService.get<string>("AWS_ENDPOINT");
 
     this.logger.log(
-      `Inicializando SQS Client | Region: ${region} | Endpoint: ${endpoint}`,
+      `Inicializando SQS Client | Region: ${region}`,
     );
 
     this.sqsClient = new SQSClient({
       region,
-      endpoint,
-      credentials: {
-        accessKeyId:
-          this.configService.get<string>("AWS_ACCESS_KEY_ID") || "test",
-        secretAccessKey:
-          this.configService.get<string>("AWS_SECRET_ACCESS_KEY") || "test",
-      },
     });
   }
 

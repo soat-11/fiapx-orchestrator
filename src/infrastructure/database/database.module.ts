@@ -19,6 +19,9 @@ import { TypeOrmVideoRepository } from "./repositories/typeorm-video.repository"
         autoLoadEntities: true,
         synchronize: true,
         entities: [TypeOrmVideo],
+        ssl: {
+          rejectUnauthorized: false,
+        }
       }),
     }),
     TypeOrmModule.forFeature([TypeOrmVideo]),

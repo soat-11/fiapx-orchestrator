@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from "uuid";
 export class Video {
   public id: string;
   public userId: string;
+  public userEmail: string;
   public fileName: string;
   public s3KeyRaw: string;
   public s3KeyZip: string | null;

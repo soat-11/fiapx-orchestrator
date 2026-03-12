@@ -15,6 +15,9 @@ export class TypeOrmVideo {
   @Column({ name: "user_id", nullable: true })
   userId: string;
 
+  @Column({ name: "user_email", nullable: true })
+  userEmail: string;
+
   @Column({ name: "file_name" })
   fileName: string;
 

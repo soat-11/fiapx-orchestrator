@@ -8,6 +8,7 @@ import {
   HttpStatus,
   UseGuards,
   InternalServerErrorException,
+  Headers,
 } from "@nestjs/common";
 import { ApiTags, ApiOperation, ApiResponse, ApiHeader } from "@nestjs/swagger";
 import { CreateVideoUploadUseCase } from "@core/use-cases/create-video-upload.use-case";
@@ -32,7 +33,7 @@ export class VideosController {
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
     summary: "Inicia upload de vídeo",
-    description: "Gera URL assinada. Requer header x-user-id.",
+    description: "Gera URL assinada. Requer header x-user-id e token Bearer.",
   })
   @ApiHeader({
     name: "x-user-id",
@@ -44,14 +45,35 @@ export class VideosController {
   async create(
     @Body() createVideoDto: CreateVideoDto,
     @CurrentUser() user: { userId: string },
+    @Headers("authorization") authHeader: string,
   ) {
+    let userEmail = "email_nao_identificado";
+
+    try {
+      if (authHeader && authHeader.startsWith("Bearer ")) {
+        const token = authHeader.split(" ")[1];
+        const payloadBase64 = token.split(".")[1];
+        const payload = JSON.parse(
+          Buffer.from(payloadBase64, "base64").toString("utf8"),
+        );
+        if (payload.email) {
+          userEmail = payload.email;
+        }
+      }
+    } catch (error) {
+      this.logger.warn(
+        `⚠️ Não foi possível extrair o e-mail do token: ${error.message}`,
+      );
+    }
+
     this.logger.log(
-      `Recebendo requisição de upload. User: ${user.userId} | Arquivo: ${createVideoDto.fileName}`,
+      `Recebendo requisição de upload. User: ${user.userId} | Email: ${userEmail} | Arquivo: ${createVideoDto.fileName}`,
     );
 
     const result = await this.createVideoUseCase.execute({
       fileName: createVideoDto.fileName,
       userId: user.userId,
+      userEmail: userEmail,
     });
 
     if (result.isFailure) {

@@ -3,10 +3,10 @@ import { Video } from "../domain/entities/video.entity";
 import { IVideoRepository } from "../repositories/video-repository.interface";
 import { IStorageGateway } from "../interfaces/storage-gateway.interface";
 import { Result } from "@shared/result";
-
 export interface CreateVideoInput {
   fileName: string;
   userId: string;
+  userEmail: string;
 }
 
 export interface CreateVideoOutput {
@@ -28,18 +28,18 @@ export class CreateVideoUploadUseCase {
 
   async execute(input: CreateVideoInput): Promise<Result<CreateVideoOutput>> {
     this.logger.log(
-      `[1/4] Iniciando processo de upload para o usuário: ${input.userId}`,
+      `[1/4] Iniciando processo de upload para o usuário: ${input.userId} (${input.userEmail})`,
     );
 
     try {
       const video = new Video({
         fileName: input.fileName,
         userId: input.userId,
+        userEmail: input.userEmail,
         s3KeyRaw: "",
       });
 
       this.logger.debug(`Video ID gerado pela entidade: ${video.id}`);
-
       this.logger.log(`[2/4] Solicitando Presigned URL...`);
 
       const { url, fileKey } = await this.storageGateway.generatePresignedUrl(

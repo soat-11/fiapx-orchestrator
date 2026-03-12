@@ -10,6 +10,7 @@ export class VideoMapper {
       s3KeyZip: raw.s3KeyZip,
       status: raw.status,
       userId: raw.userId,
+      userEmail: raw.userEmail,
       createdAt: raw.createdAt,
       updatedAt: raw.updatedAt,
     });
@@ -23,6 +24,7 @@ export class VideoMapper {
     entity.s3KeyZip = domain.s3KeyZip;
     entity.status = domain.status;
     entity.userId = domain.userId;
+    entity.userEmail = domain.userEmail;
 
     return entity;
   }

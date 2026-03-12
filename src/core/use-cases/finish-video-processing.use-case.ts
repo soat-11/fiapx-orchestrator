@@ -52,6 +52,7 @@ export class FinishVideoProcessingUseCase {
       const emailPayload = {
         videoId: video.id,
         userId: video.userId,
+        userEmail: video.userEmail,
         status: video.status,
         downloadLink: input.success ? input.zipKey : null,
         message: input.success

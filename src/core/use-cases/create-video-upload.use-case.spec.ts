@@ -38,7 +38,11 @@ describe("CreateVideoUploadUseCase", () => {
   });
 
   it("deve criar um vídeo e retornar a URL de upload com sucesso", async () => {
-    const input = { fileName: "treino.mp4", userId: "user-123" };
+    const input = {
+      fileName: "treino.mp4",
+      userId: "user-123",
+      userEmail: "email@test.com",
+    };
     const mockUrlInfo = {
       url: "http://s3.fake/upload",
       fileKey: "raw/123.mp4",
@@ -73,6 +77,7 @@ describe("CreateVideoUploadUseCase", () => {
     const result = await useCase.execute({
       fileName: "fail.mp4",
       userId: "123",
+      userEmail: "email@test.com",
     });
 
     expect(result.isFailure).toBe(true);
